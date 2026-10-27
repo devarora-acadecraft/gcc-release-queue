@@ -18,6 +18,16 @@
       "release_at": "2026-10-29T12:30:00+05:30",
       "bundle": "bundles/20261027-130107-gcc-super-admin-fix-audit-log-rich-text.bundle",
       "bundle_ref": "refs/heads/fix/audit-log-rich-text"
+    },
+    {
+      "id": "20261027-130222-gcc-api-fix-student-payment-split",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/student-payment-split",
+      "title": "Student fixes: #11",
+      "release_at": "2026-10-28T12:30:00+05:30",
+      "bundle": "bundles/20261027-130222-gcc-api-fix-student-payment-split.bundle",
+      "bundle_ref": "refs/heads/fix/student-payment-split",
+      "new_pr": true
     }
   ]
 }
