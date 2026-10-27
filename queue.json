@@ -37,6 +37,15 @@
       "release_at": "2026-10-28T12:30:00+05:30",
       "bundle": "bundles/20261027-141932-gcc-web-fix-request-refund-title.bundle",
       "bundle_ref": "refs/heads/fix/request-refund-title"
+    },
+    {
+      "id": "20261027-143451-gcc-super-admin-fix-refund-amount-breakdown",
+      "repo": "gccplatform/gcc-super-admin",
+      "branch": "fix/refund-amount-breakdown",
+      "title": "Student fixes: refund breakdown and combined payment labels",
+      "release_at": "2026-10-28T12:30:00+05:30",
+      "bundle": "bundles/20261027-143451-gcc-super-admin-fix-refund-amount-breakdown.bundle",
+      "bundle_ref": "refs/heads/fix/refund-amount-breakdown"
     }
   ]
 }
