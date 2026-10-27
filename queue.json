@@ -20,16 +20,6 @@
       "bundle_ref": "refs/heads/fix/audit-log-rich-text"
     },
     {
-      "id": "20261027-130222-gcc-api-fix-student-payment-split",
-      "repo": "gccplatform/gcc-api",
-      "branch": "fix/student-payment-split",
-      "title": "Student fixes: #11",
-      "release_at": "2026-10-28T12:30:00+05:30",
-      "bundle": "bundles/20261027-130222-gcc-api-fix-student-payment-split.bundle",
-      "bundle_ref": "refs/heads/fix/student-payment-split",
-      "new_pr": true
-    },
-    {
       "id": "20261027-141932-gcc-web-fix-request-refund-title",
       "repo": "gccplatform/gcc-web",
       "branch": "fix/request-refund-title",
