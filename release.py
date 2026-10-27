@@ -190,7 +190,7 @@ def release(e):
     open_prs = client_api(f'repos/{repo}/pulls?state=open&base=main&per_page=50') or []
     open_prs = sorted((p for p in open_prs if p['user']['login'] == ID_NAME),
                       key=lambda p: p['created_at'], reverse=True)
-    if open_prs:
+    if open_prs and not e.get('new_pr'):
         pr = open_prs[0]
         head = pr['head']['ref']
         run(['git', 'fetch', '-q', 'origin', f'+refs/heads/{head}:refs/remotes/origin/pr'], cwd=work)

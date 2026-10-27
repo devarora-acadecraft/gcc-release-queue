@@ -23,7 +23,8 @@ Bundles keep the client's workflow files inert here.
 2. Rebases the branch onto client `main`. On a conflict, it pushes the branch as prepared and flags it.
 3. Runs `precheck.sh`. If that fails, it pushes nothing and marks the entry `blocked`.
 4. If developer671 has an open PR in that repo, it adds the commits to it and merges the
-   `#n` title. Otherwise it opens a new PR with an empty body.
+   `#n` title. Otherwise it opens a new PR with an empty body. An entry queued with
+   `enqueue.sh --new-pr` always gets its own PR.
 5. Writes `state/<id>.json`. A `released`, `blocked` or `empty` state is final. To retry
    an entry, delete its state file.
 
