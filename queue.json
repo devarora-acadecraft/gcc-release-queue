@@ -9,6 +9,15 @@
       "bundle": "bundles/20261027-120027-gcc-api-fix-vapt-residuals.bundle",
       "bundle_ref": "refs/heads/fix/vapt-residuals",
       "new_pr": true
+    },
+    {
+      "id": "20261027-130107-gcc-super-admin-fix-audit-log-rich-text",
+      "repo": "gccplatform/gcc-super-admin",
+      "branch": "fix/audit-log-rich-text",
+      "title": "Super Admin fixes: #73, #74, #77",
+      "release_at": "2026-10-29T12:30:00+05:30",
+      "bundle": "bundles/20261027-130107-gcc-super-admin-fix-audit-log-rich-text.bundle",
+      "bundle_ref": "refs/heads/fix/audit-log-rich-text"
     }
   ]
 }
