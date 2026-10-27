@@ -5,7 +5,7 @@
 set -euo pipefail
 dir="$HOME/gcc-release-tick/repo.git"
 export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/gcc_release_queue -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
-[ -d "$dir" ] || git clone -q --bare --filter=blob:none git@github.com:Crux-Sphere/gcc-release-queue.git "$dir"
+[ -d "$dir" ] || git clone -q --bare --filter=blob:none git@github.com:devarora-acadecraft/gcc-release-queue.git "$dir"
 cd "$dir"
 git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
 

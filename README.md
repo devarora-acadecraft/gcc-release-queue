@@ -47,5 +47,5 @@ Alerts are issues in this repo, mentioning `@devarora-acadecraft`:
 `CLIENT_TOKEN` is a developer671 token with push access to the three client repos. To replace it:
 
 ```
-gh secret set CLIENT_TOKEN -R Crux-Sphere/gcc-release-queue
+gh secret set CLIENT_TOKEN -R devarora-acadecraft/gcc-release-queue
 ```

@@ -21,7 +21,7 @@ import urllib.request
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CLIENT_TOKEN = os.environ.get('CLIENT_TOKEN', '')
 QUEUE_TOKEN = os.environ.get('GH_TOKEN', '')
-QUEUE_REPO = os.environ.get('GITHUB_REPOSITORY', 'Crux-Sphere/gcc-release-queue')
+QUEUE_REPO = os.environ.get('GITHUB_REPOSITORY', 'devarora-acadecraft/gcc-release-queue')
 ALERT_USER = os.environ.get('ALERT_USER', 'devarora-acadecraft')
 DEFAULT_OWNER = 'gccplatform'
 CLIENT_REPOS = ['gcc-api', 'gcc-web', 'gcc-super-admin']
