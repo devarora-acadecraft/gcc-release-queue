@@ -36,6 +36,16 @@
       "release_at": "2026-10-28T12:30:00+05:30",
       "bundle": "bundles/20261027-143451-gcc-super-admin-fix-refund-amount-breakdown.bundle",
       "bundle_ref": "refs/heads/fix/refund-amount-breakdown"
+    },
+    {
+      "id": "20261027-143615-gcc-api-fix-student-payment-split",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/student-payment-split",
+      "title": "Student fixes: #11, refund breakdown and combined payment labels",
+      "release_at": "2026-10-28T12:30:00+05:30",
+      "bundle": "bundles/20261027-143615-gcc-api-fix-student-payment-split.bundle",
+      "bundle_ref": "refs/heads/fix/student-payment-split",
+      "new_pr": true
     }
   ]
 }
