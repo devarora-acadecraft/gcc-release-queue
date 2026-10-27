@@ -1,0 +1,7 @@
+[Unit]
+Description=Start the GCC release workflow when a queue entry is due
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/gcc-release-tick/tick.sh

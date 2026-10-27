@@ -1,0 +1,32 @@
+name: release
+
+on:
+  # Main trigger: acadeserver pushes a tick commit when an entry is due (tick/tick.sh).
+  push:
+    branches: [tick]
+  # Backup: every 10 min from 10:37 to 12:27 IST, then every 2 h as a catch-up.
+  schedule:
+    - cron: '7,17,27,37,47,57 5-6 * * *'
+    - cron: '41 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: python3 release.py
+        env:
+          CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
