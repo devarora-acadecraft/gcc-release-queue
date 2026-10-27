@@ -1,6 +1,0 @@
-{
-  "status": "released",
-  "pr": "https://github.com/developer671/rq-sandbox/pull/2",
-  "note": "client main moved and these commits no longer rebase cleanly; pushed as prepared, so the PR will show a merge conflict",
-  "at": "2026-10-27T07:59:15+00:00"
-}
