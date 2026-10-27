@@ -48,6 +48,8 @@ def run(cmd, cwd=None, token=None, check=True):
     env = dict(os.environ)
     env['GH_TOKEN'] = token if token is not None else QUEUE_TOKEN
     env['GIT_TERMINAL_PROMPT'] = '0'
+    if cwd is None and token == CLIENT_TOKEN:
+        cwd = tempfile.gettempdir()  # outside the checkout, whose extraheader would replace the client token
     p = subprocess.run(cmd, cwd=cwd, env=env, text=True, capture_output=True)
     if check and p.returncode:
         raise Failure(redact(f"`{' '.join(cmd[:4])}` failed: {(p.stderr or p.stdout).strip()[-1500:]}"))
@@ -288,7 +290,8 @@ def health():
                 if not info['permissions']['push']:
                     problems.append(f'no push access to {DEFAULT_OWNER}/{name}')
                 run(['git', 'ls-remote', '-q', '--heads',
-                     f'https://x-access-token:{CLIENT_TOKEN}@github.com/{DEFAULT_OWNER}/{name}.git', 'main'])
+                     f'https://x-access-token:{CLIENT_TOKEN}@github.com/{DEFAULT_OWNER}/{name}.git', 'main'],
+                    token=CLIENT_TOKEN)
             except Exception as exc:
                 problems.append(f'{DEFAULT_OWNER}/{name}: {redact(str(exc))}')
 
