@@ -17,6 +17,15 @@
       "release_at": "2026-10-27T07:55:51+00:00",
       "bundle": "bundles/20261027-075651-rq-sandbox-fix-b.bundle",
       "bundle_ref": "refs/heads/fix/b"
+    },
+    {
+      "id": "20261027-075851-rq-sandbox-fix-c",
+      "repo": "developer671/rq-sandbox",
+      "branch": "fix/c",
+      "title": "Member fixes: #3",
+      "release_at": "2026-10-27T07:57:50+00:00",
+      "bundle": "bundles/20261027-075851-rq-sandbox-fix-c.bundle",
+      "bundle_ref": "refs/heads/fix/c"
     }
   ]
 }
