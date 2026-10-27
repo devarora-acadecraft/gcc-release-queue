@@ -1,3 +1,14 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "20261027-120027-gcc-api-fix-vapt-residuals",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/vapt-residuals",
+      "title": "API fixes: access denials return 403, disbursement list scope, guideline version validation",
+      "release_at": "2026-10-27T18:00:00+05:30",
+      "bundle": "bundles/20261027-120027-gcc-api-fix-vapt-residuals.bundle",
+      "bundle_ref": "refs/heads/fix/vapt-residuals",
+      "new_pr": true
+    }
+  ]
 }
