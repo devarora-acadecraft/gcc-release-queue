@@ -46,6 +46,16 @@
       "bundle": "bundles/20261027-143615-gcc-api-fix-student-payment-split.bundle",
       "bundle_ref": "refs/heads/fix/student-payment-split",
       "new_pr": true
+    },
+    {
+      "id": "20261103-122548-gcc-api-fix-training-events-for-members",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/training-events-for-members",
+      "title": "Member fixes: training events open for members and students; Upcoming count matches the list; event ticket shows the student's membership",
+      "release_at": "2026-11-03T17:56:48+05:30",
+      "bundle": "bundles/20261103-122548-gcc-api-fix-training-events-for-members.bundle",
+      "bundle_ref": "refs/heads/fix/training-events-for-members",
+      "new_pr": true
     }
   ]
 }
