@@ -1,0 +1,6 @@
+{
+  "status": "released",
+  "pr": "https://github.com/gccplatform/gcc-api/pull/57",
+  "note": "could not add these commits to open PR #56 without a conflict, so a separate PR was raised",
+  "at": "2026-11-03T13:00:50+00:00"
+}
