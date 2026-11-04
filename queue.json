@@ -75,6 +75,16 @@
       "bundle": "bundles/20261104-055542-gcc-api-fix-student-fee-graduation-span.bundle",
       "bundle_ref": "refs/heads/fix/student-fee-graduation-span",
       "new_pr": true
+    },
+    {
+      "id": "20261104-055546-gcc-web-fix-graduation-span-cap",
+      "repo": "gccplatform/gcc-web",
+      "branch": "fix/graduation-span-cap",
+      "title": "Member fixes: graduation within 6 years of the start",
+      "release_at": "2026-11-04T11:27:42+05:30",
+      "bundle": "bundles/20261104-055546-gcc-web-fix-graduation-span-cap.bundle",
+      "bundle_ref": "refs/heads/fix/graduation-span-cap",
+      "new_pr": true
     }
   ]
 }
