@@ -65,6 +65,16 @@
       "release_at": "2026-11-03T18:29:41+05:30",
       "bundle": "bundles/20261103-125842-gcc-api-fix-ticket-chapter-live-states.bundle",
       "bundle_ref": "refs/heads/fix/ticket-chapter-live-states"
+    },
+    {
+      "id": "20261104-055542-gcc-api-fix-student-fee-graduation-span",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/student-fee-graduation-span",
+      "title": "Member fixes: student under review pays the non-member fee everywhere; graduation within 6 years of the start",
+      "release_at": "2026-11-04T11:27:42+05:30",
+      "bundle": "bundles/20261104-055542-gcc-api-fix-student-fee-graduation-span.bundle",
+      "bundle_ref": "refs/heads/fix/student-fee-graduation-span",
+      "new_pr": true
     }
   ]
 }
