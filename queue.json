@@ -103,6 +103,15 @@
       "release_at": "2026-11-11T12:13:44+05:30",
       "bundle": "bundles/20261111-064400-gcc-web-fix-session-and-request-hardening.bundle",
       "bundle_ref": "refs/heads/fix/session-and-request-hardening"
+    },
+    {
+      "id": "20261111-065827-gcc-api-fix-session-and-request-hardening",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/session-and-request-hardening",
+      "title": "Security fixes: session binding, request origin checks, sign-in hardening",
+      "release_at": "2026-11-11T12:28:27+05:30",
+      "bundle": "bundles/20261111-065827-gcc-api-fix-session-and-request-hardening.bundle",
+      "bundle_ref": "refs/heads/fix/session-and-request-hardening"
     }
   ]
 }
