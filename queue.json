@@ -85,6 +85,15 @@
       "bundle": "bundles/20261104-055546-gcc-web-fix-graduation-span-cap.bundle",
       "bundle_ref": "refs/heads/fix/graduation-span-cap",
       "new_pr": true
+    },
+    {
+      "id": "20261111-064345-gcc-super-admin-fix-session-and-request-hardening",
+      "repo": "gccplatform/gcc-super-admin",
+      "branch": "fix/session-and-request-hardening",
+      "title": "Security fixes: session binding, content policy",
+      "release_at": "2026-11-11T12:13:44+05:30",
+      "bundle": "bundles/20261111-064345-gcc-super-admin-fix-session-and-request-hardening.bundle",
+      "bundle_ref": "refs/heads/fix/session-and-request-hardening"
     }
   ]
 }
