@@ -94,6 +94,15 @@
       "release_at": "2026-11-11T12:13:44+05:30",
       "bundle": "bundles/20261111-064345-gcc-super-admin-fix-session-and-request-hardening.bundle",
       "bundle_ref": "refs/heads/fix/session-and-request-hardening"
+    },
+    {
+      "id": "20261111-064400-gcc-web-fix-session-and-request-hardening",
+      "repo": "gccplatform/gcc-web",
+      "branch": "fix/session-and-request-hardening",
+      "title": "Security fixes: session binding, signed-in pages, content policy",
+      "release_at": "2026-11-11T12:13:44+05:30",
+      "bundle": "bundles/20261111-064400-gcc-web-fix-session-and-request-hardening.bundle",
+      "bundle_ref": "refs/heads/fix/session-and-request-hardening"
     }
   ]
 }
