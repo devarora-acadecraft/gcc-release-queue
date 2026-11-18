@@ -130,6 +130,15 @@
       "release_at": "2026-11-18T11:26:38+05:30",
       "bundle": "bundles/20261118-055638-gcc-super-admin-fix-sign-in-and-admin-page-hardening.bundle",
       "bundle_ref": "refs/heads/fix/sign-in-and-admin-page-hardening"
+    },
+    {
+      "id": "20261118-055645-gcc-web-fix-sign-in-and-admin-page-hardening",
+      "repo": "gccplatform/gcc-web",
+      "branch": "fix/sign-in-and-admin-page-hardening",
+      "title": "Security fixes: pen test round 2",
+      "release_at": "2026-11-18T11:26:45+05:30",
+      "bundle": "bundles/20261118-055645-gcc-web-fix-sign-in-and-admin-page-hardening.bundle",
+      "bundle_ref": "refs/heads/fix/sign-in-and-admin-page-hardening"
     }
   ]
 }
