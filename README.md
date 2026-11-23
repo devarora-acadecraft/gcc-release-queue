@@ -5,7 +5,8 @@ at a set time instead of straight away. Default slot: **10:30 IST daily**.
 
 ## Queue a branch
 
-In a client clone, with `origin/main` freshly fetched and the branch passing `precheck.sh`:
+Client PRs target **`Uat_Master`** (owner 2026-11-23; the client's UAT deploys from it, `main` is their production
+branch). In a client clone, with `origin/Uat_Master` freshly fetched and the branch passing `precheck.sh`:
 
 ```
 bash enqueue.sh <client-clone> <branch> "Member fixes: #8, #16" [2026-10-28T10:30:00+05:30]
@@ -20,7 +21,7 @@ Bundles keep the client's workflow files inert here.
 (gcc-api first):
 
 1. If the client already has a PR for the branch, it records that PR and stops.
-2. Rebases the branch onto client `main`. On a conflict, it pushes the branch as prepared and flags it.
+2. Rebases the branch onto client `Uat_Master`. On a conflict, it pushes the branch as prepared and flags it.
 3. Runs `precheck.sh`. If that fails, it pushes nothing and marks the entry `blocked`.
 4. If developer671 has an open PR in that repo, it adds the commits to it and merges the
    `#n` title. Otherwise it opens a new PR with an empty body. An entry queued with

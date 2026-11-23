@@ -1,0 +1,49 @@
+name: port
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'client repo'
+        required: true
+        type: choice
+        options: [gcc-api, gcc-web, gcc-super-admin]
+      pr:
+        description: 'merged developer671 PR number to bring over'
+        required: true
+        type: string
+      title:
+        description: 'title for the new PR'
+        required: true
+        type: string
+      mode:
+        description: 'report (changes nothing) or apply'
+        required: true
+        default: report
+        type: choice
+        options: [report, apply]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  port:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - run: python3 port.py "$REPO" "$PR" "$TITLE" "$MODE"
+        env:
+          CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ inputs.repo }}
+          PR: ${{ inputs.pr }}
+          TITLE: ${{ inputs.title }}
+          MODE: ${{ inputs.mode }}

@@ -3,7 +3,7 @@
 #   bash ~/.claude/skills/gccplatform-pr/precheck.sh [branch]   (default: HEAD)
 set -u
 ref=${1:-HEAD}
-base=origin/main
+base=${PRECHECK_BASE:-origin/Uat_Master}  # owner 2026-11-23: client PRs target Uat_Master
 fail=0
 ok='developer671 317776374+developer671@users.noreply.github.com'
 

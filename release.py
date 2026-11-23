@@ -25,6 +25,10 @@ QUEUE_REPO = os.environ.get('GITHUB_REPOSITORY', 'devarora-acadecraft/gcc-releas
 ALERT_USER = os.environ.get('ALERT_USER', 'devarora-acadecraft')
 DEFAULT_OWNER = 'gccplatform'
 CLIENT_REPOS = ['gcc-api', 'gcc-web', 'gcc-super-admin']
+# owner 2026-11-23: client PRs target Uat_Master (the client's UAT deploys from it since 11-18; main is their
+# production branch now).
+BASE = os.environ.get('CLIENT_BASE', 'Uat_Master')
+os.environ.setdefault('PRECHECK_BASE', f'origin/{BASE}')
 ID_NAME = 'developer671'
 ID_EMAIL = '317776374+developer671@users.noreply.github.com'
 OVERDUE = dt.timedelta(minutes=45)
@@ -170,15 +174,15 @@ def release(e):
 
     notes = []
     run(['git', 'checkout', '-q', '-B', 'work', 'refs/queue/prepared'], cwd=work)
-    if run(['git', 'rebase', '-q', 'origin/main'], cwd=work, check=False).returncode:
+    if run(['git', 'rebase', '-q', f'origin/{BASE}'], cwd=work, check=False).returncode:
         run(['git', 'rebase', '--abort'], cwd=work, check=False)
         run(['git', 'checkout', '-q', '-B', 'work', 'refs/queue/prepared'], cwd=work)
-        notes.append('client main moved and these commits no longer rebase cleanly; '
+        notes.append(f'client {BASE} moved and these commits no longer rebase cleanly; '
                      'pushed as prepared, so the PR will show a merge conflict')
 
-    if run(['git', 'rev-list', '--count', 'origin/main..work'], cwd=work).stdout.strip() == '0':
-        save_state(e, 'empty', None, 'client main already contains these changes')
-        alert(f"Nothing to release: {e['id']}", f"`{repo}` main already contains `{branch}`. No PR raised.")
+    if run(['git', 'rev-list', '--count', f'origin/{BASE}..work'], cwd=work).stdout.strip() == '0':
+        save_state(e, 'empty', None, f'client {BASE} already contains these changes')
+        alert(f"Nothing to release: {e['id']}", f"`{repo}` {BASE} already contains `{branch}`. No PR raised.")
         return
 
     ok, out = precheck(work, 'work')
@@ -187,7 +191,7 @@ def release(e):
         alert(f"Blocked by precheck: {e['id']}", f"Nothing was pushed to `{repo}`.\n\n```\n{out}\n```")
         return
 
-    open_prs = client_api(f'repos/{repo}/pulls?state=open&base=main&per_page=50') or []
+    open_prs = client_api(f'repos/{repo}/pulls?state=open&base={BASE}&per_page=50') or []
     open_prs = sorted((p for p in open_prs if p['user']['login'] == ID_NAME),
                       key=lambda p: p['created_at'], reverse=True)
     if open_prs and not e.get('new_pr'):
@@ -199,7 +203,7 @@ def release(e):
             save_state(e, 'released', pr['html_url'], 'already in the open PR')
             return
         run(['git', 'checkout', '-q', '-B', 'append', 'refs/remotes/origin/pr'], cwd=work)
-        commits = run(['git', 'rev-list', '--reverse', 'origin/main..work'], cwd=work).stdout.split()
+        commits = run(['git', 'rev-list', '--reverse', f'origin/{BASE}..work'], cwd=work).stdout.split()
         picked = True
         for c in commits:
             if run(['git', 'cherry-pick', c], cwd=work, check=False).returncode:
@@ -230,7 +234,7 @@ def release(e):
         target = f'{branch}-{now():%m%d%H%M}'
         notes.append(f'branch `{branch}` already existed on the client with other commits; used `{target}`')
     run(['git', 'push', '-q', 'origin', f'work:refs/heads/{target}'], cwd=work, token=CLIENT_TOKEN)
-    pr = client_api(f'repos/{repo}/pulls', 'POST', {'title': e['title'], 'head': target, 'base': 'main', 'body': ''})
+    pr = client_api(f'repos/{repo}/pulls', 'POST', {'title': e['title'], 'head': target, 'base': BASE, 'body': ''})
     save_state(e, 'released', pr['html_url'], '; '.join(notes))
     alert(f"Released: {repo} PR #{pr['number']} '{e['title']}'",
           pr['html_url'] + ''.join(f'\n\n**Check:** {n}' for n in notes), close=not notes)
@@ -290,7 +294,7 @@ def health():
                 if not info['permissions']['push']:
                     problems.append(f'no push access to {DEFAULT_OWNER}/{name}')
                 run(['git', 'ls-remote', '-q', '--heads',
-                     f'https://x-access-token:{CLIENT_TOKEN}@github.com/{DEFAULT_OWNER}/{name}.git', 'main'],
+                     f'https://x-access-token:{CLIENT_TOKEN}@github.com/{DEFAULT_OWNER}/{name}.git', BASE],
                     token=CLIENT_TOKEN)
             except Exception as exc:
                 problems.append(f'{DEFAULT_OWNER}/{name}: {redact(str(exc))}')
