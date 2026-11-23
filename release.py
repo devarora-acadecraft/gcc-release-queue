@@ -203,7 +203,10 @@ def release(e):
             save_state(e, 'released', pr['html_url'], 'already in the open PR')
             return
         run(['git', 'checkout', '-q', '-B', 'append', 'refs/remotes/origin/pr'], cwd=work)
-        commits = run(['git', 'rev-list', '--reverse', f'origin/{BASE}..work'], cwd=work).stdout.split()
+        # Only what the open PR lacks: a commit it already holds would re-pick empty and fail the append.
+        new = {line[2:].strip() for line in cherry if line.startswith('+ ')}
+        commits = [c for c in run(['git', 'rev-list', '--reverse', f'origin/{BASE}..work'], cwd=work).stdout.split()
+                   if c in new]
         picked = True
         for c in commits:
             if run(['git', 'cherry-pick', c], cwd=work, check=False).returncode:
