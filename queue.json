@@ -169,6 +169,15 @@
       "bundle": "bundles/20261123-093705-gcc-super-admin-fix-send-chapter-invitations.bundle",
       "bundle_ref": "refs/heads/fix/send-chapter-invitations",
       "new_pr": true
+    },
+    {
+      "id": "20261123-133501-gcc-api-fix-invitation-follow-ups",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/invitation-follow-ups",
+      "title": "Super Admin fixes: removed members left out of invitations, new invitation after email change",
+      "release_at": "2026-11-23T13:35:01+00:00",
+      "bundle": "bundles/20261123-133501-gcc-api-fix-invitation-follow-ups.bundle",
+      "bundle_ref": "refs/heads/fix/invitation-follow-ups"
     }
   ]
 }
