@@ -33,9 +33,15 @@ def describe(repo, name):
 
 def branch_sha(repo, name):
     try:
-        return rq.client_api(f'repos/{repo}/branches/{name}')['commit']['sha']
+        b = rq.client_api(f'repos/{repo}/branches/{name}')
     except rq.Failure:
         return None
+    # GitHub answers a renamed branch's old name with the new branch: that is not the branch asked for.
+    return b['commit']['sha'] if b.get('name') == name else None
+
+
+def branch_names(repo):
+    return [b['name'] for b in rq.client_api(f'repos/{repo}/branches?per_page=100') or []]
 
 
 def main(mode):
@@ -46,6 +52,9 @@ def main(mode):
         old_sha, new_sha = branch_sha(repo, OLD), branch_sha(repo, NEW)
         lines.append(f"\n### {repo}\ndefault branch `{info['default_branch']}`; `{OLD}` {(old_sha or 'missing')[:8]}; "
                      f"`{NEW}` {(new_sha or 'missing')[:8]}")
+        names = branch_names(repo)
+        lines.append(f'- {len(names)} branch(es); not ours: ' + ', '.join(
+            f'`{n}`' for n in names if not n.startswith(('fix/', 'feat/', 'sec/', 'chore/')))[:900])
         if not new_sha:
             lines.append(f'- `{NEW}` does not exist: nothing moved')
             problems += 1
