@@ -68,6 +68,10 @@ def main(mode):
             continue
         ahead, behind = cmp
         lines.append(f'- `{NEW}` vs `{OLD}`: {ahead} commit(s) only on `{NEW}`, {behind} commit(s) only on `{OLD}`')
+        recent = rq.client_api(f'repos/{repo}/pulls?state=all&per_page=30') or []
+        for p in [p for p in recent if p['user']['login'] == rq.ID_NAME][:6]:
+            lines.append(f"- {rq.ID_NAME} #{p['number']} '{p['title']}' base `{p['base']['ref']}`: "
+                         f"{'merged ' + p['merged_at'] if p.get('merged_at') else p['state']}")
         prs = rq.client_api(f'repos/{repo}/pulls?state=open&base={OLD}&per_page=50') or []
         prs = [p for p in prs if p['user']['login'] == rq.ID_NAME]
         if not prs:
