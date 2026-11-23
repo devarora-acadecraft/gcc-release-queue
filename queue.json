@@ -139,6 +139,16 @@
       "release_at": "2026-11-18T11:26:45+05:30",
       "bundle": "bundles/20261118-055645-gcc-web-fix-sign-in-and-admin-page-hardening.bundle",
       "bundle_ref": "refs/heads/fix/sign-in-and-admin-page-hardening"
+    },
+    {
+      "id": "20261123-065923-gcc-api-fix-chapter-footer-links",
+      "repo": "gccplatform/gcc-api",
+      "branch": "fix/chapter-footer-links",
+      "title": "Chapter page and file storage fixes: footer links, delete stored files",
+      "release_at": "2026-11-23T06:59:23+00:00",
+      "bundle": "bundles/20261123-065923-gcc-api-fix-chapter-footer-links.bundle",
+      "bundle_ref": "refs/heads/fix/chapter-footer-links",
+      "new_pr": true
     }
   ]
 }
