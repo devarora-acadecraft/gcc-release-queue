@@ -159,6 +159,16 @@
       "bundle": "bundles/20261123-093658-gcc-api-fix-send-chapter-invitations.bundle",
       "bundle_ref": "refs/heads/fix/send-chapter-invitations",
       "new_pr": true
+    },
+    {
+      "id": "20261123-093705-gcc-super-admin-fix-send-chapter-invitations",
+      "repo": "gccplatform/gcc-super-admin",
+      "branch": "fix/send-chapter-invitations",
+      "title": "Super Admin fixes: send chapter invitations on demand",
+      "release_at": "2026-11-23T09:36:58+00:00",
+      "bundle": "bundles/20261123-093705-gcc-super-admin-fix-send-chapter-invitations.bundle",
+      "bundle_ref": "refs/heads/fix/send-chapter-invitations",
+      "new_pr": true
     }
   ]
 }
