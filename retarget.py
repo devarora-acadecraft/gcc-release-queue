@@ -17,8 +17,18 @@ NEW = os.environ.get('RETARGET_TO', 'master')
 
 
 def compare(repo, base, head):
-    c = rq.client_api(f'repos/{repo}/compare/{base}...{head}?per_page=1')
+    try:
+        c = rq.client_api(f'repos/{repo}/compare/{base}...{head}?per_page=1')
+    except rq.Failure:
+        return None  # GitHub answers 404 when the two have no common history
     return c['ahead_by'], c['behind_by']
+
+
+def describe(repo, name):
+    commits = rq.client_api(f'repos/{repo}/commits?sha={name}&per_page=3') or []
+    out = [f"  - {c['sha'][:8]} {c['commit']['committer']['date']} {c['commit']['author']['name']}: "
+           f"{c['commit']['message'].splitlines()[0][:80]}" for c in commits]
+    return '\n'.join(out)
 
 
 def branch_sha(repo, name):
@@ -40,7 +50,14 @@ def main(mode):
             lines.append(f'- `{NEW}` does not exist: nothing moved')
             problems += 1
             continue
-        ahead, behind = compare(repo, OLD, NEW)
+        lines.append(f'- latest on `{NEW}`:\n' + describe(repo, NEW))
+        lines.append(f'- latest on `{OLD}`:\n' + describe(repo, OLD))
+        cmp = compare(repo, OLD, NEW)
+        if cmp is None:
+            lines.append(f'- `{NEW}` and `{OLD}` share NO history: no PR can move as it is - nothing moved')
+            problems += 1
+            continue
+        ahead, behind = cmp
         lines.append(f'- `{NEW}` vs `{OLD}`: {ahead} commit(s) only on `{NEW}`, {behind} commit(s) only on `{OLD}`')
         prs = rq.client_api(f'repos/{repo}/pulls?state=open&base={OLD}&per_page=50') or []
         prs = [p for p in prs if p['user']['login'] == rq.ID_NAME]
@@ -48,12 +65,11 @@ def main(mode):
             lines.append(f'- no open {rq.ID_NAME} PR on `{OLD}`')
         for p in prs:
             head = p['head']['sha']
-            own, _ = compare(repo, OLD, head)
-            on_new, _ = compare(repo, NEW, head)
+            own = (compare(repo, OLD, head) or (None,))[0]
+            on_new = (compare(repo, NEW, head) or (None,))[0]
             tag = f"#{p['number']} '{p['title']}' ({p['head']['ref']})"
-            if on_new != own:
-                lines.append(f'- {tag}: {own} commit(s) on `{OLD}` but {on_new} on `{NEW}` '
-                             f'(`{NEW}` lacks {on_new - own} commit(s) the PR builds on) - NOT moved')
+            if on_new is None or on_new != own:
+                lines.append(f'- {tag}: {own} commit(s) on `{OLD}` but {on_new} on `{NEW}` - NOT moved')
                 problems += 1
                 continue
             if mode == 'apply':
