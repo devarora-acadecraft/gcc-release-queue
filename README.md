@@ -35,7 +35,7 @@ A bundle needs a base commit the client repo has, so it needs a fresh `origin/Ua
 preparing machine cannot fetch the client, commit `git format-patch -1 --stdout <branch>` (developer671 author,
 precheck passed) to `patches/`, then run Actions `patch.yml` (repo, patch, branch, title): `report` applies it on
 fresh `Uat_Master` and prechecks without pushing; `apply` also pushes the branch and opens the PR (empty body).
-It refuses when a developer671 PR is open on the base or the branch exists. Immediate, not slotted.
+Naming the head branch of an open developer671 PR adds the commits to that PR (and sets its title); a new PR is refused while one is open or the branch exists. Immediate, not slotted.
 
 ## Triggers
 

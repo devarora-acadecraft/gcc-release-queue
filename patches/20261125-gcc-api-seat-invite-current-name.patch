@@ -1,0 +1,157 @@
+From 1ddf87a6f6292846e372091885b94736167461d9 Mon Sep 17 00:00:00 2001
+From: developer671 <317776374+developer671@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 10:52:49 +0000
+Subject: [PATCH] Show the current name in leadership invitations
+
+---
+ .../chapter-seat-invites.service.spec.ts      | 47 ++++++++++++++++++-
+ .../chapter-seat-invites.service.ts           | 36 ++++++++++----
+ 2 files changed, 72 insertions(+), 11 deletions(-)
+
+diff --git a/src/admin/governance/chapter-seat-invites.service.spec.ts b/src/admin/governance/chapter-seat-invites.service.spec.ts
+index 9aef78e5..deec41b8 100644
+--- a/src/admin/governance/chapter-seat-invites.service.spec.ts
++++ b/src/admin/governance/chapter-seat-invites.service.spec.ts
+@@ -21,6 +21,8 @@ function setup(
+     officer?: boolean;
+     removedUserIds?: string[];
+     deactivatedUserIds?: string[];
++    profileNames?: Record<string, string>;
++    seatNames?: Record<string, string>;
+     mailOk?: boolean;
+     denied?: boolean;
+   } = {},
+@@ -101,7 +103,23 @@ function setup(
+         async ({ where }: { where: { userId: { in: string[] } } }) =>
+           where.userId.in
+             .filter((id) => !options.removedUserIds?.includes(id))
+-            .map((userId) => ({ userId, status: officerStatus(userId) })),
++            .map((userId) => ({
++              userId,
++              status: officerStatus(userId),
++              displayName: options.seatNames?.[userId] ?? null,
++            })),
++      ),
++    },
++    userProfile: {
++      findMany: jest.fn(async () =>
++        Object.entries(options.profileNames ?? {}).map(
++          ([userId, displayName]) => ({
++            userId,
++            displayName,
++            firstName: null,
++            lastName: null,
++          }),
++        ),
+       ),
+     },
+   };
+@@ -514,3 +532,30 @@ describe('seat invite state', () => {
+     expect(prisma.chapterTeamInvitation.findMany).not.toHaveBeenCalled();
+   });
+ });
++
++describe('the name on a seat', () => {
++  it('shows the name the team table shows, so a rename shows here too', async () => {
++    const { service } = setup({
++      profileNames: { 'user-vp': 'Iqbal Singh' },
++      seatNames: { 'user-founder': 'Asha (Founder)' },
++    });
++
++    const list = await service.listSeatInvites(admin, 'chapter-1');
++
++    expect(list.seats.map((seat) => [seat.invitationId, seat.name])).toEqual([
++      ['inv-founder', 'Asha (Founder)'],
++      ['inv-vp', 'Iqbal Singh'],
++    ]);
++  });
++
++  it('keeps the wizard name for an account without one', async () => {
++    const { service } = setup();
++
++    const list = await service.listSeatInvites(admin, 'chapter-1');
++
++    expect(list.seats.map((seat) => seat.name)).toEqual([
++      'Asha Rao',
++      'Vik Patel',
++    ]);
++  });
++});
+diff --git a/src/admin/governance/chapter-seat-invites.service.ts b/src/admin/governance/chapter-seat-invites.service.ts
+index 7cea3c4a..3bc179d5 100644
+--- a/src/admin/governance/chapter-seat-invites.service.ts
++++ b/src/admin/governance/chapter-seat-invites.service.ts
+@@ -4,6 +4,7 @@ import type { AdminRequestContext } from '../contracts/admin-response.types';
+ import type { OfficerRoleKey } from '../founder-provisioning.service';
+ import { AdminChaptersServiceBase } from './admin-chapters-service.base';
+ import { resolveChapterAccess } from './admin-chapters-helpers';
++import { profileDisplayName } from './chapter-team-reads';
+ import { notFound } from './governance.utils';
+ import {
+   SEAT_INVITATION_STATUSES,
+@@ -54,9 +55,9 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+     return {
+       chapterId,
+       canSend: chapter.status === 'ACTIVE',
+-      seats: seats.map(({ row, lastLoginAt, deactivated }) => ({
++      seats: seats.map(({ row, lastLoginAt, deactivated, name }) => ({
+         invitationId: row.id,
+-        name: row.inviteeName,
++        name: name || row.inviteeName,
+         email: row.email,
+         role: row.role,
+         state: seatInviteState(row.status, lastLoginAt),
+@@ -242,20 +243,34 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+       where: { email: { in: rows.map((row) => row.email) } },
+       select: { id: true, email: true, lastLoginAt: true },
+     });
+-    const seated = await this.prisma.chapterOfficer.findMany({
+-      where: {
+-        chapterId,
+-        userId: { in: users.map((user) => user.id) },
+-        removedAt: null,
+-      },
+-      select: { userId: true, status: true },
+-    });
++    const userIds = users.map((user) => user.id);
++    const [seated, profiles] = await Promise.all([
++      this.prisma.chapterOfficer.findMany({
++        where: { chapterId, userId: { in: userIds }, removedAt: null },
++        select: { userId: true, status: true, displayName: true },
++      }),
++      this.prisma.userProfile.findMany({
++        where: { userId: { in: userIds } },
++        select: {
++          userId: true,
++          displayName: true,
++          firstName: true,
++          lastName: true,
++        },
++      }),
++    ]);
+     const live = new Set(seated.map((officer) => officer.userId));
+     const active = new Set(
+       seated
+         .filter((officer) => officer.status === 'ACTIVE')
+         .map((officer) => officer.userId),
+     );
++    const profileOf = new Map(
++      profiles.map((profile) => [profile.userId, profile]),
++    );
++    const nameOf = (userId: string) =>
++      seated.find((officer) => officer.userId === userId && officer.displayName)
++        ?.displayName || profileDisplayName(profileOf.get(userId));
+     const byEmail = new Map(
+       users
+         .filter((user) => live.has(user.id))
+@@ -269,6 +284,7 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+               row,
+               lastLoginAt: user.lastLoginAt,
+               deactivated: !active.has(user.id),
++              name: nameOf(user.id),
+             },
+           ]
+         : [];
+-- 
+2.43.0
+
