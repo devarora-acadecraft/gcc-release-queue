@@ -1,0 +1,417 @@
+From 40b5166d5f1ed407576231336adedb746a84c4f2 Mon Sep 17 00:00:00 2001
+From: developer671 <317776374+developer671@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 06:16:37 +0000
+Subject: [PATCH] Send nothing about an email change before the invitation;
+ show deactivated seats
+
+---
+ .../chapter-seat-invites.service.spec.ts      |  58 +++++++++-
+ .../chapter-seat-invites.service.ts           |  33 +++++-
+ .../team/team-member-sign-in-email.spec.ts    | 105 +++++++++++++++++-
+ .../team/team-member-sign-in-email.ts         |  23 +++-
+ 4 files changed, 200 insertions(+), 19 deletions(-)
+
+diff --git a/src/admin/governance/chapter-seat-invites.service.spec.ts b/src/admin/governance/chapter-seat-invites.service.spec.ts
+index 2d29e496..9aef78e5 100644
+--- a/src/admin/governance/chapter-seat-invites.service.spec.ts
++++ b/src/admin/governance/chapter-seat-invites.service.spec.ts
+@@ -20,6 +20,7 @@ function setup(
+     users?: Record<string, { id: string; lastLoginAt: Date | null }>;
+     officer?: boolean;
+     removedUserIds?: string[];
++    deactivatedUserIds?: string[];
+     mailOk?: boolean;
+     denied?: boolean;
+   } = {},
+@@ -47,6 +48,8 @@ function setup(
+     'vp@x.com': { id: 'user-vp', lastLoginAt: null },
+   };
+   const updates: Array<{ id: string; data: Record<string, unknown> }> = [];
++  const officerStatus = (userId: string) =>
++    options.deactivatedUserIds?.includes(userId) ? 'INACTIVE' : 'ACTIVE';
+   const prisma = {
+     chapter: {
+       findUnique: jest.fn(async () => ({
+@@ -89,14 +92,16 @@ function setup(
+       ),
+     },
+     chapterOfficer: {
+-      findFirst: jest.fn(async () =>
+-        options.officer === false ? null : { id: 'officer-1' },
++      findFirst: jest.fn(async ({ where }: { where: { userId: string } }) =>
++        options.officer === false
++          ? null
++          : { id: 'officer-1', status: officerStatus(where.userId) },
+       ),
+       findMany: jest.fn(
+         async ({ where }: { where: { userId: { in: string[] } } }) =>
+           where.userId.in
+             .filter((id) => !options.removedUserIds?.includes(id))
+-            .map((userId) => ({ userId })),
++            .map((userId) => ({ userId, status: officerStatus(userId) })),
+       ),
+     },
+   };
+@@ -420,6 +425,53 @@ describe('removed team members', () => {
+   });
+ });
+ 
++describe('deactivated team members', () => {
++  it('lists a deactivated member as deactivated, and every other seat as not', async () => {
++    const { service } = setup({ deactivatedUserIds: ['user-vp'] });
++
++    const list = await service.listSeatInvites(admin, 'chapter-1');
++
++    expect(
++      list.seats.map((seat) => [seat.invitationId, seat.deactivated]),
++    ).toEqual([
++      ['inv-founder', false],
++      ['inv-vp', true],
++    ]);
++  });
++
++  it('refuses a direct send to a deactivated member', async () => {
++    const { service, founderProvisioning, updates, audit } = setup({
++      deactivatedUserIds: ['user-vp'],
++    });
++
++    await expect(
++      service.sendSeatInvite(admin, 'chapter-1', 'inv-vp'),
++    ).rejects.toMatchObject({
++      response: { code: 'ADMIN_CHAPTER_SEAT_DEACTIVATED' },
++    });
++    expect(founderProvisioning.reissueTemporaryPassword).not.toHaveBeenCalled();
++    expect(updates).toEqual([]);
++    expect(audit).toEqual([]);
++  });
++
++  it('leaves a deactivated member out of Send all', async () => {
++    const { service, founderProvisioning } = setup({
++      deactivatedUserIds: ['user-vp'],
++    });
++
++    const result = await service.sendAllSeatInvites(admin, 'chapter-1');
++
++    expect(result).toMatchObject({
++      sent: 1,
++      sentInvitationIds: ['inv-founder'],
++      failed: [],
++    });
++    expect(founderProvisioning.reissueTemporaryPassword).toHaveBeenCalledTimes(
++      1,
++    );
++  });
++});
++
+ describe('seat invite state', () => {
+   it('is Signed in once the person signed in, whatever was sent', () => {
+     expect(seatInviteState('QUEUED', null)).toBe('NOT_SENT');
+diff --git a/src/admin/governance/chapter-seat-invites.service.ts b/src/admin/governance/chapter-seat-invites.service.ts
+index 1e5ed8e0..7cea3c4a 100644
+--- a/src/admin/governance/chapter-seat-invites.service.ts
++++ b/src/admin/governance/chapter-seat-invites.service.ts
+@@ -54,13 +54,14 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+     return {
+       chapterId,
+       canSend: chapter.status === 'ACTIVE',
+-      seats: seats.map(({ row, lastLoginAt }) => ({
++      seats: seats.map(({ row, lastLoginAt, deactivated }) => ({
+         invitationId: row.id,
+         name: row.inviteeName,
+         email: row.email,
+         role: row.role,
+         state: seatInviteState(row.status, lastLoginAt),
+         emailSentAt: row.emailSentAt?.toISOString() ?? null,
++        deactivated,
+       })),
+     };
+   }
+@@ -94,8 +95,8 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+     const sent: string[] = [];
+     const failed: Array<{ invitationId: string; email: string; code: string }> =
+       [];
+-    for (const { row, lastLoginAt } of seats) {
+-      if (lastLoginAt) continue;
++    for (const { row, lastLoginAt, deactivated } of seats) {
++      if (lastLoginAt || deactivated) continue;
+       try {
+         await this.send(admin, chapter, row);
+         sent.push(row.id);
+@@ -156,7 +157,7 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+     }
+     const officer = await this.prisma.chapterOfficer.findFirst({
+       where: { chapterId: chapter.id, userId: user.id, removedAt: null },
+-      select: { id: true },
++      select: { id: true, status: true },
+     });
+     if (!officer) {
+       seatError(
+@@ -165,6 +166,13 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+         HttpStatus.CONFLICT,
+       );
+     }
++    if (officer.status !== 'ACTIVE') {
++      seatError(
++        'ADMIN_CHAPTER_SEAT_DEACTIVATED',
++        'This person is deactivated. Reactivate them to send an invitation.',
++        HttpStatus.CONFLICT,
++      );
++    }
+     const loginBase = (
+       this.configService.config.webAppUrl ?? 'http://localhost:3000'
+     ).replace(/\/$/, '');
+@@ -240,9 +248,14 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+         userId: { in: users.map((user) => user.id) },
+         removedAt: null,
+       },
+-      select: { userId: true },
++      select: { userId: true, status: true },
+     });
+     const live = new Set(seated.map((officer) => officer.userId));
++    const active = new Set(
++      seated
++        .filter((officer) => officer.status === 'ACTIVE')
++        .map((officer) => officer.userId),
++    );
+     const byEmail = new Map(
+       users
+         .filter((user) => live.has(user.id))
+@@ -250,7 +263,15 @@ export class AdminChapterSeatInvitesService extends AdminChaptersServiceBase {
+     );
+     return rows.flatMap((row) => {
+       const user = byEmail.get(row.email.toLowerCase());
+-      return user ? [{ row, lastLoginAt: user.lastLoginAt }] : [];
++      return user
++        ? [
++            {
++              row,
++              lastLoginAt: user.lastLoginAt,
++              deactivated: !active.has(user.id),
++            },
++          ]
++        : [];
+     });
+   }
+ }
+diff --git a/src/chapters/team/team-member-sign-in-email.spec.ts b/src/chapters/team/team-member-sign-in-email.spec.ts
+index 2968c88a..1d4b71b0 100644
+--- a/src/chapters/team/team-member-sign-in-email.spec.ts
++++ b/src/chapters/team/team-member-sign-in-email.spec.ts
+@@ -1,6 +1,10 @@
+ import * as argon2 from 'argon2';
+ 
+-import { emailMoved, moveSignInEmail } from './team-member-sign-in-email';
++import {
++  announceSignInEmailChange,
++  emailMoved,
++  moveSignInEmail,
++} from './team-member-sign-in-email';
+ 
+ type Seat = {
+   id: string;
+@@ -13,7 +17,13 @@ type Seat = {
+ const sentAt = new Date('2026-11-23T09:00:00.000Z');
+ const OLD_HASH = 'old-temporary-password-hash';
+ 
+-function setup(options: { lastLoginAt?: Date | null; seats?: Seat[] } = {}) {
++function setup(
++  options: {
++    lastLoginAt?: Date | null;
++    seats?: Seat[];
++    chapterLive?: boolean;
++  } = {},
++) {
+   const account = {
+     id: 'user-vp',
+     email: 'vp@old.example',
+@@ -62,13 +72,15 @@ function setup(options: { lastLoginAt?: Date | null; seats?: Seat[] } = {}) {
+         async ({
+           where,
+         }: {
+-          where: { email: string; status: { in: string[] } };
++          where: { email: string; status: string | { in: string[] } };
+         }) =>
+           seats
+             .filter(
+               (seat) =>
+                 seat.email.toLowerCase() === where.email.toLowerCase() &&
+-                where.status.in.includes(seat.status),
++                (typeof where.status === 'string'
++                  ? where.status === seat.status
++                  : where.status.in.includes(seat.status)),
+             )
+             .map((seat) => ({ ...seat })),
+       ),
+@@ -92,6 +104,9 @@ function setup(options: { lastLoginAt?: Date | null; seats?: Seat[] } = {}) {
+         },
+       ),
+     },
++    chapter: {
++      count: jest.fn(async () => (options.chapterLive === false ? 0 : 1)),
++    },
+     otpChallenge: { updateMany: jest.fn(async () => ({ count: 1 })) },
+     session: { updateMany: jest.fn(async () => ({ count: 0 })) },
+     auditEvent: {
+@@ -127,6 +142,7 @@ describe('moveSignInEmail and the wizard seats', () => {
+       userId: 'user-vp',
+       previous: 'vp@old.example',
+       email: 'vp@new.example',
++      awaitingInvite: true,
+     });
+     expect(account.email).toBe('vp@new.example');
+     expect(seats[0]).toMatchObject({
+@@ -250,3 +266,84 @@ describe('moveSignInEmail and the wizard seats', () => {
+     expect(audits).toEqual([]);
+   });
+ });
++
++describe('telling the person about a sign-in email change', () => {
++  const notifier = () => ({
++    notifyEmailChanged: jest.fn(async () => undefined),
++    notifyOldEmailAddress: jest.fn(async () => undefined),
++  });
++
++  it.each([
++    ['whose invitation was sent', 'RELEASED', sentAt],
++    ['whose invitation was not sent yet', 'QUEUED', null],
++  ])(
++    'emails neither address for a seat holder %s who never signed in',
++    async (_label, status, emailSentAt) => {
++      const { client } = setup({
++        seats: [
++          {
++            id: 'inv-vp',
++            chapterId: 'chapter-1',
++            email: 'vp@old.example',
++            status,
++            emailSentAt,
++          },
++        ],
++      });
++      const notify = notifier();
++
++      const change = await moveSignInEmail(
++        client as never,
++        'user-vp',
++        'vp@new.example',
++        actor,
++      );
++      await announceSignInEmailChange(notify as never, change);
++
++      expect(change?.awaitingInvite).toBe(true);
++      expect(notify.notifyEmailChanged).not.toHaveBeenCalled();
++      expect(notify.notifyOldEmailAddress).not.toHaveBeenCalled();
++    },
++  );
++
++  it('tells someone who signed in, and their old address', async () => {
++    const { client } = setup({
++      lastLoginAt: new Date('2026-11-23T10:00:00.000Z'),
++    });
++    const notify = notifier();
++
++    const change = await moveSignInEmail(
++      client as never,
++      'user-vp',
++      'vp@new.example',
++      actor,
++    );
++    await announceSignInEmailChange(notify as never, change);
++
++    expect(change?.awaitingInvite).toBe(false);
++    expect(notify.notifyEmailChanged).toHaveBeenCalledWith(
++      'user-vp',
++      'vp@new.example',
++    );
++    expect(notify.notifyOldEmailAddress).toHaveBeenCalledWith(
++      'vp@old.example',
++      'vp@new.example',
++    );
++  });
++
++  it('tells a never-signed-in person whose seats are in no live chapter', async () => {
++    const { client } = setup({ chapterLive: false });
++    const notify = notifier();
++
++    const change = await moveSignInEmail(
++      client as never,
++      'user-vp',
++      'vp@new.example',
++      actor,
++    );
++    await announceSignInEmailChange(notify as never, change);
++
++    expect(change?.awaitingInvite).toBe(false);
++    expect(notify.notifyOldEmailAddress).toHaveBeenCalledTimes(1);
++  });
++});
+diff --git a/src/chapters/team/team-member-sign-in-email.ts b/src/chapters/team/team-member-sign-in-email.ts
+index cd3a7a3e..ee89de38 100644
+--- a/src/chapters/team/team-member-sign-in-email.ts
++++ b/src/chapters/team/team-member-sign-in-email.ts
+@@ -3,6 +3,7 @@ import { Prisma } from '../../generated/prisma/client';
+ import { errors } from '../../auth/errors';
+ import type { SecurityNotifyService } from '../../auth/security-notify.service';
+ import {
++  awaitingSeatInvite,
+   moveSeatInvites,
+   type SeatInviteActor,
+ } from '../../admin/governance/seat-invites';
+@@ -10,13 +11,19 @@ import {
+ type UserClient = Pick<Prisma.TransactionClient, 'user'>;
+ type MoveClient = Pick<
+   Prisma.TransactionClient,
+-  'user' | 'chapterTeamInvitation' | 'otpChallenge' | 'session' | 'auditEvent'
++  | 'user'
++  | 'chapter'
++  | 'chapterTeamInvitation'
++  | 'otpChallenge'
++  | 'session'
++  | 'auditEvent'
+ >;
+ 
+ export type SignInEmailChange = {
+   userId: string;
+   previous: string;
+   email: string;
++  awaitingInvite: boolean;
+ };
+ 
+ export async function assertSignInEmailFree(
+@@ -46,7 +53,7 @@ export async function moveSignInEmail(
+   const email = newEmail.trim().toLowerCase();
+   const user = await client.user.findUnique({
+     where: { id: userId },
+-    select: { email: true },
++    select: { email: true, lastLoginAt: true },
+   });
+   if (!user || user.email.toLowerCase() === email) return null;
+   await assertSignInEmailFree(client, userId, email);
+@@ -60,16 +67,20 @@ export async function moveSignInEmail(
+       errors.emailAlreadyRegistered();
+     throw error;
+   }
+-  const change = { userId, previous: user.email, email };
+-  await moveSeatInvites(client, change, actor);
+-  return change;
++  const moved = { userId, previous: user.email, email };
++  await moveSeatInvites(client, moved, actor);
++  const awaitingInvite = await awaitingSeatInvite(client, {
++    email,
++    lastLoginAt: user.lastLoginAt,
++  });
++  return { ...moved, awaitingInvite };
+ }
+ 
+ export async function announceSignInEmailChange(
+   notify: SecurityNotifyService | undefined,
+   change: SignInEmailChange | null,
+ ): Promise<void> {
+-  if (!change || !notify) return;
++  if (!change || !notify || change.awaitingInvite) return;
+   await notify.notifyEmailChanged(change.userId, change.email);
+   await notify.notifyOldEmailAddress(change.previous, change.email);
+ }
+-- 
+2.43.0
+

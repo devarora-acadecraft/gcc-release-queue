@@ -1,0 +1,61 @@
+From f80b726192851bd8b6a0608d85257b25fe94fe30 Mon Sep 17 00:00:00 2001
+From: developer671 <317776374+developer671@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 06:22:45 +0000
+Subject: [PATCH] Show deactivated members as Inactive in leadership
+ invitations
+
+---
+ components/chapters/SeatInvitesPanel.tsx | 11 ++++++++---
+ service/chapterService.ts                |  1 +
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/components/chapters/SeatInvitesPanel.tsx b/components/chapters/SeatInvitesPanel.tsx
+index 75981aba..f3e779c3 100644
+--- a/components/chapters/SeatInvitesPanel.tsx
++++ b/components/chapters/SeatInvitesPanel.tsx
+@@ -31,7 +31,7 @@ export default function SeatInvitesPanel({ chapterId, disabled }: { chapterId: s
+   const data = query.data;
+   if (!data || data.seats.length === 0) return null;
+ 
+-  const notSent = data.seats.filter((seat) => seat.state === "NOT_SENT");
++  const notSent = data.seats.filter((seat) => seat.state === "NOT_SENT" && !seat.deactivated);
+   const canSend = canWrite && data.canSend && !disabled;
+   const refresh = () => queryClient.invalidateQueries({ queryKey: ["chapters", "seat-invitations", chapterId] });
+ 
+@@ -108,7 +108,12 @@ export default function SeatInvitesPanel({ chapterId, disabled }: { chapterId: s
+                 <span className={`rounded-full px-2.5 py-1 font-display text-[12px] font-semibold ${state.cls}`}>
+                   {state.text}
+                 </span>
+-                {canSend && seat.state === "NOT_SENT" && (
++                {seat.deactivated && (
++                  <span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 font-display text-[12px] font-semibold text-[#475569]">
++                    Inactive
++                  </span>
++                )}
++                {canSend && !seat.deactivated && seat.state === "NOT_SENT" && (
+                   <button
+                     type="button"
+                     onClick={() => void sendOne(seat)}
+@@ -118,7 +123,7 @@ export default function SeatInvitesPanel({ chapterId, disabled }: { chapterId: s
+                     {busy === seat.invitationId ? "Sending…" : "Send invite"}
+                   </button>
+                 )}
+-                {canSend && seat.state === "SENT" && (
++                {canSend && !seat.deactivated && seat.state === "SENT" && (
+                   <button
+                     type="button"
+                     onClick={() => setResend(seat)}
+diff --git a/service/chapterService.ts b/service/chapterService.ts
+index 0ba8fdc5..42fd2690 100644
+--- a/service/chapterService.ts
++++ b/service/chapterService.ts
+@@ -523,5 +523,6 @@ export interface SeatInvitations {
+     role: string;
+     state: SeatInviteState;
+     emailSentAt: string | null;
++    deactivated?: boolean;
+   }>;
+ }
+-- 
+2.43.0
+

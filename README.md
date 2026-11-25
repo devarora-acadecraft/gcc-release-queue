@@ -29,6 +29,14 @@ Bundles keep the client's workflow files inert here.
 5. Writes `state/<id>.json`. A `released`, `blocked` or `empty` state is final. To retry
    an entry, delete its state file.
 
+## One commit as a patch (no client access where it was prepared)
+
+A bundle needs a base commit the client repo has, so it needs a fresh `origin/Uat_Master`. When the
+preparing machine cannot fetch the client, commit `git format-patch -1 --stdout <branch>` (developer671 author,
+precheck passed) to `patches/`, then run Actions `patch.yml` (repo, patch, branch, title): `report` applies it on
+fresh `Uat_Master` and prechecks without pushing; `apply` also pushes the branch and opens the PR (empty body).
+It refuses when a developer671 PR is open on the base or the branch exists. Immediate, not slotted.
+
 ## Triggers
 
 - **acadeserver**: a systemd user timer (`tick/`) with `Persistent=true` checks every 10 min.
