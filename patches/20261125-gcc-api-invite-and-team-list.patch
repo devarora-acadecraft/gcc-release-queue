@@ -1,7 +1,7 @@
 From 40b5166d5f1ed407576231336adedb746a84c4f2 Mon Sep 17 00:00:00 2001
 From: developer671 <317776374+developer671@users.noreply.github.com>
 Date: Wed, 25 Nov 2026 06:16:37 +0000
-Subject: [PATCH] Send nothing about an email change before the invitation;
+Subject: [PATCH 1/2] Send nothing about an email change before the invitation;
  show deactivated seats
 
 ---
@@ -412,6 +412,94 @@ index cd3a7a3e..ee89de38 100644
    await notify.notifyEmailChanged(change.userId, change.email);
    await notify.notifyOldEmailAddress(change.previous, change.email);
  }
+-- 
+2.43.0
+
+
+From a0a4d3060420bf1790224bf431af076857034da6 Mon Sep 17 00:00:00 2001
+From: developer671 <317776374+developer671@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 06:42:49 +0000
+Subject: [PATCH 2/2] Leave removed people out of the admin team list
+
+---
+ .../governance/chapter-team-reads.spec.ts     | 46 +++++++++++++++++++
+ src/admin/governance/chapter-team-reads.ts    |  2 +-
+ 2 files changed, 47 insertions(+), 1 deletion(-)
+
+diff --git a/src/admin/governance/chapter-team-reads.spec.ts b/src/admin/governance/chapter-team-reads.spec.ts
+index 73cb4690..97a7eddf 100644
+--- a/src/admin/governance/chapter-team-reads.spec.ts
++++ b/src/admin/governance/chapter-team-reads.spec.ts
+@@ -5,6 +5,7 @@ import {
+   invitationDisplayStatus,
+   invitationsForUnseated,
+   listChapterInvitations,
++  listChapterTeam,
+   memberCertificationStatus,
+   oneRowPerPerson,
+   profileDisplayName,
+@@ -197,3 +198,48 @@ describe('listChapterInvitations', () => {
+     });
+   });
+ });
++
++describe('listChapterTeam', () => {
++  it('leaves removed people out of the team list', async () => {
++    const officer = (id: string, userId: string, removedAt: Date | null) => ({
++      id,
++      userId,
++      officeRole: 'CORE_TEAM_EVENTS',
++      designation: null,
++      micrositeDesignation: null,
++      displayName: null,
++      contactEmail: null,
++      status: removedAt ? 'REMOVED' : 'ACTIVE',
++      joinedAt: new Date('2026-11-23T00:00:00.000Z'),
++      removedAt,
++      createdAt: new Date('2026-11-23T00:00:00.000Z'),
++      version: 1,
++    });
++    const officers = [
++      officer('o1', 'asha', null),
++      officer('o2', 'ravi', new Date('2026-11-24T00:00:00.000Z')),
++    ];
++    const prisma = {
++      chapterOfficer: {
++        findMany: jest.fn(async ({ where }: { where: { removedAt?: null } }) =>
++          'removedAt' in where
++            ? officers.filter((row) => row.removedAt === null)
++            : officers,
++        ),
++      },
++      userProfile: { findMany: jest.fn(async () => []) },
++      user: {
++        findMany: jest.fn(async () => [
++          { id: 'asha', email: 'asha@example.com' },
++          { id: 'ravi', email: 'ravi@example.com' },
++        ]),
++      },
++    } as unknown as PrismaService;
++
++    const result = await listChapterTeam(prisma, 'chapter-1');
++
++    expect(result.items.map((item) => [item.userId, item.status])).toEqual([
++      ['asha', 'ACTIVE'],
++    ]);
++  });
++});
+diff --git a/src/admin/governance/chapter-team-reads.ts b/src/admin/governance/chapter-team-reads.ts
+index c7e85053..85d78fc3 100644
+--- a/src/admin/governance/chapter-team-reads.ts
++++ b/src/admin/governance/chapter-team-reads.ts
+@@ -105,7 +105,7 @@ export async function listChapterTeam(
+   chapterId: string,
+ ) {
+   const officers = await prisma.chapterOfficer.findMany({
+-    where: { chapterId },
++    where: { chapterId, removedAt: null },
+     orderBy: { createdAt: 'asc' },
+     select: {
+       id: true,
 -- 
 2.43.0
 
