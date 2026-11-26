@@ -1,0 +1,29 @@
+name: patch-requests
+
+on:
+  push:
+    branches: [main]
+    paths: ['patches/requests.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - run: python3 patch_requests.py
+        env:
+          CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
+          PATCH_KEY: ${{ secrets.PATCH_KEY }}
+          GH_TOKEN: ${{ github.token }}
