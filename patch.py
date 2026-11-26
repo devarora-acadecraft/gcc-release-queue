@@ -19,10 +19,13 @@ does not apply, the precheck fails, or a new PR is asked for while a developer67
 <branch> already exists. The result is an issue in this repo.
 """
 import os
+import subprocess
 import sys
 import tempfile
 
 import release as rq
+
+PATCH_KEY = os.environ.pop('PATCH_KEY', '')
 
 
 def main(name, patch, branch, title, mode, new_pr=False):
@@ -33,11 +36,12 @@ def main(name, patch, branch, title, mode, new_pr=False):
         raise rq.Failure(f'{patch} not found in the queue repo')
     quiet = patch.endswith('.enc')
     if quiet:
-        if not os.environ.get('PATCH_KEY'):
+        if not PATCH_KEY:
             raise rq.Failure('PATCH_KEY secret is not set')
         plain = os.path.join(tempfile.mkdtemp(prefix='patch-in-'), 'patch.mbox')
-        if rq.run(['openssl', 'enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-pass', 'env:PATCH_KEY',
-                   '-in', path, '-out', plain], check=False).returncode:
+        if subprocess.run(['openssl', 'enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-pass', 'env:GCC_PATCH_KEY',
+                           '-in', path, '-out', plain], env={'PATH': os.environ.get('PATH', ''), 'GCC_PATCH_KEY': PATCH_KEY},
+                          capture_output=True).returncode:
             raise rq.Failure(f'{patch} could not be decrypted with PATCH_KEY')
         path = plain
 
