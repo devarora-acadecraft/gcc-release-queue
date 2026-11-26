@@ -5,6 +5,7 @@ client has); the queue's CLIENT_TOKEN can.
 
   python3 patch.py <repo> patches/<file>.patch <branch> "<title>" report   apply + precheck, push nothing
   python3 patch.py <repo> patches/<file>.patch <branch> "<title>" apply    then push <branch> and open the PR
+  ... apply new-pr                                                          its own PR even if one is open
 
 When <branch> is the head of an open developer671 PR on the base, the patch is applied on top of that branch and
 pushed to it (adding to the open PR, as release.py does), and the PR takes <title>. Otherwise a new PR is opened
@@ -21,7 +22,7 @@ import tempfile
 import release as rq
 
 
-def main(name, patch, branch, title, mode):
+def main(name, patch, branch, title, mode, new_pr=False):
     repo = f'{rq.DEFAULT_OWNER}/{name}'
     base = rq.BASE
     path = os.path.join(rq.ROOT, patch)
@@ -36,7 +37,7 @@ def main(name, patch, branch, title, mode):
 
     open_prs = [p for p in rq.client_api(f'repos/{repo}/pulls?state=open&base={base}&per_page=50') or []
                 if p['user']['login'] == rq.ID_NAME]
-    target = next((p for p in open_prs if p['head']['ref'] == branch), None)
+    target = None if new_pr else next((p for p in open_prs if p['head']['ref'] == branch), None)
     taken = bool(rq.run(['git', 'ls-remote', '--heads', 'origin', branch], cwd=work).stdout.strip())
     start = f'origin/{base}'
     if target:
@@ -61,7 +62,7 @@ def main(name, patch, branch, title, mode):
         return 1
 
     notes = []
-    if not target and open_prs:
+    if not target and open_prs and not new_pr:
         notes.append('open developer671 PR on the base: ' + ', '.join(
             f"#{p['number']} (`{p['head']['ref']}`)" for p in open_prs) + '; name its branch to add to it')
     if not target and taken:
@@ -86,11 +87,11 @@ def main(name, patch, branch, title, mode):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 6 or sys.argv[5] not in ('report', 'apply') or not rq.CLIENT_TOKEN:
+    if len(sys.argv) not in (6, 7) or sys.argv[5] not in ('report', 'apply') or not rq.CLIENT_TOKEN             or sys.argv[6:] not in ([], ['new-pr'], ['']):
         print(__doc__, file=sys.stderr)
         sys.exit(2)
     try:
-        sys.exit(main(*sys.argv[1:]))
+        sys.exit(main(*sys.argv[1:6], new_pr=sys.argv[6:] == ['new-pr']))
     except rq.Failure as exc:
         rq.alert(f'Patch error {sys.argv[1]} {sys.argv[3]}', f'```\n{rq.redact(str(exc))}\n```')
         raise

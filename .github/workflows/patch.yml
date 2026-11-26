@@ -26,6 +26,11 @@ on:
         default: report
         type: choice
         options: [report, apply]
+      new_pr:
+        description: 'open its own PR even if a developer671 PR is open on the base'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -43,7 +48,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: main
-      - run: python3 patch.py "$REPO" "$PATCH" "$BRANCH" "$TITLE" "$MODE"
+      - run: python3 patch.py "$REPO" "$PATCH" "$BRANCH" "$TITLE" "$MODE" "$NEW_PR"
         env:
           CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
           GH_TOKEN: ${{ github.token }}
@@ -52,3 +57,4 @@ jobs:
           BRANCH: ${{ inputs.branch }}
           TITLE: ${{ inputs.title }}
           MODE: ${{ inputs.mode }}
+          NEW_PR: ${{ inputs.new_pr && 'new-pr' || '' }}
